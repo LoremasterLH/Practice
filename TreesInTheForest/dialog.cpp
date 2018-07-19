@@ -9,7 +9,7 @@ using namespace std;
 
 const float viewDistance = 200.0F; // Assuming distance of view.
 const float PI = 3.14159265358979323846F;
-const int num_trees = 30;
+const int num_trees = 25;
 
 class ATreePosition
 {
@@ -54,9 +54,19 @@ bool IsVisible(const ATreePosition &tree, const float &viewAngle, const float &d
 
 float GetAngle(const ATreePosition &tree) // Missing something here. Math doesn't add up.
 {
-    cout << tree.y << " " << tree.x << endl;
-    cout << asin(tree.y/viewDistance) << " " << acos(tree.x/viewDistance) << endl;
-    return asin(tree.y/viewDistance);
+    return atan2(tree.y, tree.x);
+}
+
+int GetQuadrant(float x, float y)
+{
+    if(x>=0 && y>=0)
+        return 1;
+    else if(x<=0 && y>=0)
+        return 2;
+    else if(x<0 && y<0)
+        return 3;
+    else
+        return 4;
 }
 
 float GetAngleWhereISeeTheMaxNumberOfTrees(float angleOfViewInDegree, ATreePosition* forest, int forestSize)
@@ -73,11 +83,16 @@ float GetAngleWhereISeeTheMaxNumberOfTrees(float angleOfViewInDegree, ATreePosit
         int count = 0;
         for (int j=0; j<forestSize; j++)
         {
-            if(IsVisible(forest[j], angleOfViewInRadian, facingAngle))
+            if(i != j && IsVisible(forest[j], angleOfViewInRadian, facingAngle))
+            {
+                cout << "Tree " << j << " visible from " << i << endl;
                 count++;
+            }
         }
+        cout << "Number of trees " << count << endl;
         if(count > mostTrees)
         {
+            cout << "Angle changed from " << RadianToDegrees(optimalAngle) << " to " << RadianToDegrees(facingAngle) << " because " << mostTrees << " < " << count << endl;
             mostTrees = count;
             optimalAngle = facingAngle;
         }
@@ -108,27 +123,27 @@ Dialog::Dialog(QWidget *parent) :
     QPen trees(Qt::red);
     outlinePen.setWidth(2);
 
-    scene->setSceneRect(-viewDistance, -viewDistance, 2*viewDistance, 2*viewDistance);
+    scene->setSceneRect(static_cast<double>(-viewDistance), static_cast<double>(-viewDistance), static_cast<double>(2*viewDistance), static_cast<double>(2*viewDistance));
 
     //scene->addEllipse(GetBorderPosition(0).x-2.5, GetBorderPosition(0).y-2.5, 5, 5, outlinePen, redBrush);
 
     scene->addEllipse(-2.5, -2.5, 5, 5, outlinePen, blueBrush);
-    scene->addEllipse(-viewDistance*1.2, -viewDistance*1.2, 2*viewDistance*1.2, 2*viewDistance*1.2, outlinePen);
+    scene->addEllipse(static_cast<double>(-viewDistance)*1.2, static_cast<double>(-viewDistance)*1.2, static_cast<double>(viewDistance)*2.4, static_cast<double>(viewDistance)*2.4, outlinePen);
 
     ATreePosition my_list[num_trees];
     for (int i=0; i< num_trees; i++)
     {
-        my_list[i] = ATreePosition(rand()%(int)(viewDistance*2)-viewDistance, rand()%(int)(viewDistance*2)-viewDistance);
-        scene->addEllipse(my_list[i].x-2.5, my_list[i].y-2.5, 5, 5, outlinePen, greenBrush);
+        my_list[i] = ATreePosition(rand()%static_cast<int>(viewDistance*2)-viewDistance, rand()%static_cast<int>(viewDistance*2)-viewDistance);
+        scene->addEllipse(static_cast<double>(my_list[i].x)-2.5, static_cast<double>(my_list[i].y)-2.5, 5, 5, outlinePen, greenBrush);
+        scene->addText(QString::number(i))->setPos(static_cast<double>(my_list[i].x), static_cast<double>(my_list[i].y));
     }
 
-    double viewAngle = 110.F;
-    double angle = GetAngleWhereISeeTheMaxNumberOfTrees(viewAngle, my_list, 10);    // Radian
-    ui->lineEdit->setText(QString::number(RadianToDegrees(angle)));
-    scene->addLine(0,0, viewDistance * cos(DegreesToRadian(viewAngle/2)+angle), viewDistance * sin(DegreesToRadian(viewAngle/2)+angle));
-    scene->addLine(0,0, viewDistance * cos(DegreesToRadian(-viewAngle/2)+angle),viewDistance * sin(DegreesToRadian(-viewAngle/2)+angle));
-    scene->addLine(0, 0, viewDistance * cos(angle), viewDistance * sin(angle), facing);
-    delete my_list;
+    float viewAngle = 45.F;
+    float angle = GetAngleWhereISeeTheMaxNumberOfTrees(viewAngle, my_list, num_trees);    // Radian
+    ui->lineEdit->setText(QString::number(static_cast<double>(180.F + RadianToDegrees(angle))));
+    scene->addLine(0, 0, static_cast<double>(viewDistance * cos(DegreesToRadian(viewAngle/2)+angle)), static_cast<double>(viewDistance * sin(DegreesToRadian(viewAngle/2)+angle)));
+    scene->addLine(0, 0, static_cast<double>(viewDistance * cos(DegreesToRadian(-viewAngle/2)+angle)), static_cast<double>(viewDistance * sin(DegreesToRadian(-viewAngle/2)+angle)));
+    scene->addLine(0, 0, static_cast<double>(viewDistance * cos(angle)), static_cast<double>(viewDistance * sin(angle)), facing);
 }
 
 Dialog::~Dialog()
